@@ -1,0 +1,36 @@
+:repository-owner: arduino-libraries
+:repository-name: Arduino_Pro_Tutorials
+
+= {repository-name} Library for Arduino =
+
+image:https://github.com/{repository-owner}/{repository-name}/actions/workflows/check-arduino.yml/badge.svg["Check Arduino status", link="https://github.com/{repository-owner}/{repository-name}/actions/workflows/check-arduino.yml"]
+image:https://github.com/{repository-owner}/{repository-name}/actions/workflows/compile-examples.yml/badge.svg["Compile Examples status", link="https://github.com/{repository-owner}/{repository-name}/actions/workflows/compile-examples.yml"]
+image:https://github.com/{repository-owner}/{repository-name}/actions/workflows/spell-check.yml/badge.svg["Spell Check status", link="https://github.com/{repository-owner}/{repository-name}/actions/workflows/spell-check.yml"]
+
+This library contains the complete Arduino sketches from the Arduino Pro Tutorials found on the Arduino docs website under the Tutorials title of the corresponding product.
+
+* https://docs.arduino.cc/hardware/portenta-h7#tutorials[Arduino Portenta H7]
+* https://docs.arduino.cc/hardware/portenta-h7-lite#tutorials[Arduino Portenta H7 Lite]
+* https://docs.arduino.cc/hardware/edge-control#tutorials[Arduino Edge Control]
+* https://docs.arduino.cc/hardware/portenta-vision-shield#tutorials[Arduino Portenta Vision Shield]
+* https://docs.arduino.cc/hardware/nicla-sense-me#tutorials[Arduino Nicla Sense ME]
+
+
+
+== License ==
+
+Copyright (c) 2021 Arduino SA. All rights reserved.
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
