@@ -29,10 +29,12 @@
   #endif
 #endif
 
-#ifdef __AVR__
-#define TX_PAYLOAD_BUFFER_SIZE 128
-#else
-#define TX_PAYLOAD_BUFFER_SIZE 256
+#ifndef TX_PAYLOAD_BUFFER_SIZE
+  #ifdef __AVR__
+    #define TX_PAYLOAD_BUFFER_SIZE 128
+  #else
+    #define TX_PAYLOAD_BUFFER_SIZE 256
+  #endif
 #endif
 
 #define MQTT_CONNECT      1
@@ -67,6 +69,7 @@ MqttClient::MqttClient(Client* client) :
   _cleanSession(true),
   _keepAliveInterval(60 * 1000L),
   _connectionTimeout(30 * 1000L),
+  _tx_payload_buffer_size(TX_PAYLOAD_BUFFER_SIZE),
   _connectError(MQTT_SUCCESS),
   _connected(false),
   _subscribeQos(0x00),
@@ -227,6 +230,7 @@ int MqttClient::endMessage()
             return 0;
           }
         }
+        yield();
       }
 
       // reply with PUBREL
@@ -242,6 +246,7 @@ int MqttClient::endMessage()
       if (_returnCode != -1) {
         return (_returnCode == 0);
       }
+      yield();
     }
 
     return 0;
@@ -282,7 +287,7 @@ int MqttClient::beginWill(const String& topic, unsigned short size, bool retain,
 
 int MqttClient::beginWill(const char* topic, bool retain, uint8_t qos)
 {
-  return beginWill(topic, TX_PAYLOAD_BUFFER_SIZE, retain, qos);
+  return beginWill(topic, _tx_payload_buffer_size, retain, qos);
 }
 
 int MqttClient::beginWill(const String& topic, bool retain, uint8_t qos)
@@ -345,6 +350,7 @@ int MqttClient::subscribe(const char* topic, uint8_t qos)
 
       return (_returnCode >= 0 && _returnCode <= 2);
     }
+    yield();
   }
 
   stop();
@@ -388,6 +394,7 @@ int MqttClient::unsubscribe(const char* topic)
     if (_returnCode != -1) {
       return (_returnCode == 0);
     }
+    yield();
   }
 
   stop();
@@ -653,12 +660,12 @@ size_t MqttClient::write(const uint8_t *buf, size_t size)
     return clientWrite(buf, size);
   }
 
-  if ((_txPayloadBufferIndex + size) >= TX_PAYLOAD_BUFFER_SIZE) {
-    size = (TX_PAYLOAD_BUFFER_SIZE - _txPayloadBufferIndex);
+  if ((_txPayloadBufferIndex + size) >= _tx_payload_buffer_size) {
+    size = (_tx_payload_buffer_size - _txPayloadBufferIndex);
   }
 
   if (_txPayloadBuffer == NULL) {
-    _txPayloadBuffer = (uint8_t*)malloc(TX_PAYLOAD_BUFFER_SIZE);
+    _txPayloadBuffer = (uint8_t*)malloc(_tx_payload_buffer_size);
   }
 
   memcpy(&_txPayloadBuffer[_txPayloadBufferIndex], buf, size);
@@ -793,6 +800,17 @@ void MqttClient::setConnectionTimeout(unsigned long timeout)
   _connectionTimeout = timeout;
 }
 
+void MqttClient::setTxPayloadSize(unsigned short size)
+{
+  if (_txPayloadBuffer) {
+    free(_txPayloadBuffer);
+    _txPayloadBuffer = NULL;
+    _txPayloadBufferIndex = 0;
+  }
+    
+  _tx_payload_buffer_size = size;
+}
+
 int MqttClient::connectError() const
 {
   return _connectError;
@@ -911,6 +929,7 @@ int MqttClient::connect(IPAddress ip, const char* host, uint16_t port)
     if (_returnCode != MQTT_CONNECTION_TIMEOUT) {
       break;
     }
+    yield();
   }
 
   _connectError = _returnCode;
