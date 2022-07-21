@@ -30,6 +30,18 @@
 
 #include <Arduino.h>
 
+/*
+e-Paper Arduino UNO Mega2560
+Vcc 5V  5V
+GND GND GND
+DIN D11 D51
+CLK D13 D52
+CS  D10 D10
+DC  D9  D9
+RST D8  D8
+BUSY  D7  D7 
+*/
+
 // Pin definition
 #define RST_PIN         8
 #define DC_PIN          9
