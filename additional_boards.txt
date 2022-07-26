@@ -1,4 +1,16 @@
 https://arduino.esp8266.com/stable/package_esp8266com_index.json
 https://dl.espressif.com/dl/package_esp32_index.json
 https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json
 https://raw.githubusercontent.com/DFRobot/FireBeetle-ESP8266/master/package_firebeetle8266_index.json
+https://mcudude.github.io/MicroCore/package_MCUdude_MicroCore_index.json
+
+ATtiny13 --> https://raw.githubusercontent.com/sleemanj/optiboot/master/dists/package_gogo_diy_attiny_index.json
+https://www.instructables.com/id/Updated-Guide-on-How-to-Program-an-Attiny13-or-13a/
+
+ATtiny13 -> MicroCore --> https://mcudude.github.io/MicroCore/package_MCUdude_MicroCore_index.json
+https://create.arduino.cc/projecthub/taunoerik/programming-attiny13-with-arduino-uno-07beba?ref=similar&ref_id=304168&offset=0
+
+ATtiny85 -> ATtiny --> https://raw.githubusercontent.com/damellis/attiny/ide-1.6.x-boards-manager/package_damellis_attiny_index.json
+https://raw.githubusercontent.com/damellis/attiny/ide-1.6.x-boards-manager/package_damellis_attiny_index.json
+
