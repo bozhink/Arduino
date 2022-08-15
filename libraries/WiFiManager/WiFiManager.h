@@ -39,6 +39,10 @@
 #define WM_NOSOFTAPSSID    // no softapssid() @todo shim
 #endif
 
+#ifdef ARDUINO_ESP32S3_DEV
+#define WM_NOTEMP
+#endif
+
 // #include "soc/efuse_reg.h" // include to add efuse chip rev to info, getChipRevision() is almost always the same though, so not sure why it matters.
 
 // #define esp32autoreconnect    // implement esp32 autoreconnect event listener kludge, @DEPRECATED
@@ -46,31 +50,31 @@
 
 #define WM_WEBSERVERSHIM      // use webserver shim lib
 
-#define G(string_literal)  (String(FPSTR(string_literal)).c_str())
+#define WM_G(string_literal)  (String(FPSTR(string_literal)).c_str())
 
-#define STRING2(x) #x
-#define STRING(x) STRING2(x)    
+#define WM_STRING2(x) #x
+#define WM_STRING(x) STRING2(x)    
 
 // #include <esp_idf_version.h>
 #ifdef ESP_IDF_VERSION
-    // #pragma message "ESP_IDF_VERSION_MAJOR = " STRING(ESP_IDF_VERSION_MAJOR)
-    // #pragma message "ESP_IDF_VERSION_MINOR = " STRING(ESP_IDF_VERSION_MINOR)
-    // #pragma message "ESP_IDF_VERSION_PATCH = " STRING(ESP_IDF_VERSION_PATCH)
-    #define VER_IDF_STR STRING(ESP_IDF_VERSION_MAJOR)  "."  STRING(ESP_IDF_VERSION_MINOR)  "."  STRING(ESP_IDF_VERSION_PATCH)
+    // #pragma message "ESP_IDF_VERSION_MAJOR = " WM_STRING(ESP_IDF_VERSION_MAJOR)
+    // #pragma message "ESP_IDF_VERSION_MINOR = " WM_STRING(ESP_IDF_VERSION_MINOR)
+    // #pragma message "ESP_IDF_VERSION_PATCH = " WM_STRING(ESP_IDF_VERSION_PATCH)
+    #define VER_IDF_STR WM_STRING(ESP_IDF_VERSION_MAJOR)  "."  WM_STRING(ESP_IDF_VERSION_MINOR)  "."  WM_STRING(ESP_IDF_VERSION_PATCH)
 #endif
 
 // #include "esp_arduino_version.h"
 #ifdef ESP_ARDUINO_VERSION
-    // #pragma message "ESP_ARDUINO_VERSION_MAJOR = " STRING(ESP_ARDUINO_VERSION_MAJOR)
-    // #pragma message "ESP_ARDUINO_VERSION_MINOR = " STRING(ESP_ARDUINO_VERSION_MINOR)
-    // #pragma message "ESP_ARDUINO_VERSION_PATCH = " STRING(ESP_ARDUINO_VERSION_PATCH)
-    #define VER_ARDUINO_STR STRING(ESP_ARDUINO_VERSION_MAJOR)  "."  STRING(ESP_ARDUINO_VERSION_MINOR)  "."  STRING(ESP_ARDUINO_VERSION_PATCH)
+    // #pragma message "ESP_ARDUINO_VERSION_MAJOR = " WM_STRING(ESP_ARDUINO_VERSION_MAJOR)
+    // #pragma message "ESP_ARDUINO_VERSION_MINOR = " WM_STRING(ESP_ARDUINO_VERSION_MINOR)
+    // #pragma message "ESP_ARDUINO_VERSION_PATCH = " WM_STRING(ESP_ARDUINO_VERSION_PATCH)
+    #define VER_ARDUINO_STR WM_STRING(ESP_ARDUINO_VERSION_MAJOR)  "."  WM_STRING(ESP_ARDUINO_VERSION_MINOR)  "."  WM_STRING(ESP_ARDUINO_VERSION_PATCH)
 #else
     // #include <core_version.h>
-    // #pragma message "ESP_ARDUINO_VERSION_GIT  = " STRING(ARDUINO_ESP32_GIT_VER)//  0x46d5afb1
-    // #pragma message "ESP_ARDUINO_VERSION_DESC = " STRING(ARDUINO_ESP32_GIT_DESC) //  1.0.6
+    // #pragma message "ESP_ARDUINO_VERSION_GIT  = " WM_STRING(ARDUINO_ESP32_GIT_VER)//  0x46d5afb1
+    // #pragma message "ESP_ARDUINO_VERSION_DESC = " WM_STRING(ARDUINO_ESP32_GIT_DESC) //  1.0.6
     #define VER_ARDUINO_STR "Unknown"
-    // #pragma message "ESP_ARDUINO_VERSION_REL  = " STRING(ARDUINO_ESP32_RELEASE) //"1_0_6"
+    // #pragma message "ESP_ARDUINO_VERSION_REL  = " WM_STRING(ARDUINO_ESP32_RELEASE) //"1_0_6"
 #endif
 
 #ifdef ESP8266
@@ -179,7 +183,7 @@ class WiFiManagerParameter {
 class WiFiManager
 {
   public:
-    WiFiManager(Stream& consolePort);
+    WiFiManager(Print& consolePort);
     WiFiManager();
     ~WiFiManager();
     void WiFiManagerInit();
@@ -244,11 +248,14 @@ class WiFiManager
     //called when wifi settings have been changed and connection was successful ( or setBreakAfterConfig(true) )
     void          setSaveConfigCallback( std::function<void()> func );
 
-    //called when saving either params-in-wifi or params page
-    void          setSaveParamsCallback( std::function<void()> func );
-
     //called when saving params-in-wifi or params before anything else happens (eg wifi)
     void          setPreSaveConfigCallback( std::function<void()> func );
+
+    //called when saving params before anything else happens
+    void          setPreSaveParamsCallback( std::function<void()> func );
+
+    //called when saving either params-in-wifi or params page
+    void          setSaveParamsCallback( std::function<void()> func );
 
     //called just before doing OTA update
     void          setPreOtaUpdateCallback( std::function<void()> func );
@@ -484,9 +491,10 @@ class WiFiManager
     uint16_t      _httpPort               = 80; // port for webserver
     // uint8_t       _retryCount             = 0; // counter for retries, probably not needed if synchronous
     uint8_t       _connectRetries         = 1; // number of sta connect retries, force reconnect, wait loop (connectimeout) does not always work and first disconnect bails
-    bool          _aggresiveReconn        = false; // use an agrressive reconnect strategy, WILL delay conxs
+    bool          _aggresiveReconn        = true; // use an agrressive reconnect strategy, WILL delay conxs
                                                    // on some conn failure modes will add delays and many retries to work around esp and ap bugs, ie, anti de-auth protections
-    bool          _allowExit              = true; // allow exit non blocking
+                                                   // https://github.com/tzapu/WiFiManager/issues/1067
+    bool          _allowExit              = true; // allow exit in nonblocking, else user exit/abort calls will be ignored including cptimeout
 
     #ifdef ESP32
     wifi_event_id_t wm_event_id           = 0;
@@ -527,6 +535,7 @@ class WiFiManager
     // internal options
     
     // wifiscan notes
+    // currently disabled due to issues with caching, sometimes first scan is empty esp32 wifi not init yet race, or portals hit server nonstop flood
     // The following are background wifi scanning optimizations
     // experimental to make scans faster, preload scans after starting cp, and visiting home page, so when you click wifi its already has your list
     // ideally we would add async and xhr here but I am holding off on js requirements atm
@@ -629,9 +638,17 @@ class WiFiManager
             #define WM_ARDUINOEVENTS
         #else
             #define WM_NOSOFTAPSSID
+            #define WM_NOCOUNTRY
         #endif
 
+    #else 
+        #define WM_NOCOUNTRY
     #endif
+
+    #ifdef WM_NOCOUNTRY
+        #warning "ESP32 set country unavailable" 
+    #endif
+
 
     #ifdef WM_ARDUINOEVENTS
         void   WiFiEvent(WiFiEvent_t event, arduino_event_info_t info);
@@ -706,9 +723,9 @@ class WiFiManager
 
     // @todo use DEBUG_ESP_PORT ?
     #ifdef WM_DEBUG_PORT
-    Stream& _debugPort = WM_DEBUG_PORT;
+    Print& _debugPort = WM_DEBUG_PORT;
     #else
-    Stream& _debugPort = Serial; // debug output stream ref
+    Print& _debugPort = Serial; // debug output stream ref
     #endif
 
     template <typename Generic>
@@ -726,7 +743,8 @@ class WiFiManager
     std::function<void(WiFiManager*)> _apcallback;
     std::function<void()> _webservercallback;
     std::function<void()> _savewificallback;
-    std::function<void()> _presavecallback;
+    std::function<void()> _presavewificallback;
+    std::function<void()> _presaveparamscallback;
     std::function<void()> _saveparamscallback;
     std::function<void()> _resetcallback;
     std::function<void()> _preotaupdatecallback;
