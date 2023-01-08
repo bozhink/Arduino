@@ -38,6 +38,8 @@
 #  define NANO_RP2040_WATCHDOG_MAX_TIMEOUT_ms (8389)
 #endif /* ARDUINO_ARCH_MBED */
 
+#include <Arduino_ConnectionHandler.h>
+
 /******************************************************************************
  * GLOBAL VARIABLES
  ******************************************************************************/
@@ -91,7 +93,7 @@ void mkr_nb_feed_watchdog()
 static void mbed_watchdog_enable()
 {
   watchdog_config_t cfg;
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION)
+#if defined(BOARD_STM32H7)
   cfg.timeout_ms = PORTENTA_H7_WATCHDOG_MAX_TIMEOUT_ms;
 #elif defined(ARDUINO_NANO_RP2040_CONNECT)
   cfg.timeout_ms = NANO_RP2040_WATCHDOG_MAX_TIMEOUT_ms;
@@ -114,10 +116,23 @@ static void mbed_watchdog_reset()
   }
 }
 
+#if defined (ARDUINO_PORTENTA_H7_WIFI_HAS_FEED_WATCHDOG_FUNC)
+static void mbed_watchdog_enable_network_feed(const bool use_ethernet)
+{
+#if defined(BOARD_HAS_ETHERNET)
+  if(use_ethernet) {
+    Ethernet.setFeedWatchdogFunc(watchdog_reset);
+  } else
+#endif
+    WiFi.setFeedWatchdogFunc(watchdog_reset);
+
+}
+#endif
+
 void mbed_watchdog_trigger_reset()
 {
   watchdog_config_t cfg;
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION)
+#if defined(BOARD_STM32H7)
   cfg.timeout_ms = 1;
 #elif defined(ARDUINO_NANO_RP2040_CONNECT)
   cfg.timeout_ms = 1;
@@ -152,6 +167,17 @@ void watchdog_reset()
   samd_watchdog_reset();
 #else
   mbed_watchdog_reset();
+#endif
+}
+
+void watchdog_enable_network_feed(const bool use_ethernet)
+{
+#ifdef WIFI_HAS_FEED_WATCHDOG_FUNC
+  WiFi.setFeedWatchdogFunc(watchdog_reset);
+#endif
+
+#ifdef ARDUINO_PORTENTA_H7_WIFI_HAS_FEED_WATCHDOG_FUNC
+  mbed_watchdog_enable_network_feed(use_ethernet);
 #endif
 }
 #endif /* (ARDUINO_ARCH_SAMD) || (ARDUINO_ARCH_MBED) */

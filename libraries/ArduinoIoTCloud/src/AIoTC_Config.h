@@ -141,6 +141,10 @@
   #define HAS_TCP
 #endif
 
+#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION)
+  #define BOARD_STM32H7
+#endif
+
 /******************************************************************************
  * CONSTANTS
  ******************************************************************************/
@@ -158,6 +162,6 @@
 #define AIOT_CONFIG_RP2040_OTA_HTTP_HEADER_RECEIVE_TIMEOUT_ms   (10*1000UL)
 #define AIOT_CONFIG_RP2040_OTA_HTTP_DATA_RECEIVE_TIMEOUT_ms   (4*60*1000UL)
 
-#define AIOT_CONFIG_LIB_VERSION "1.7.0"
+#define AIOT_CONFIG_LIB_VERSION "1.8.0"
 
 #endif /* ARDUINO_AIOTC_CONFIG_H_ */

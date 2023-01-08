@@ -1,13 +1,10 @@
 /*
    This sketch is used in combination with Travis CI to check if
-   unintentional breaking changes are made to the used facing
+   unintentional breaking changes are made to the user facing
    Arduino IoT Cloud API.
 
    This sketch is compatible with:
-     - MKR 1000
-     - MKR WIFI 1010
-     - MKR GSM 1400
-     - MKR WAN 1300/1310
+     - https://github.com/arduino-libraries/ArduinoIoTCloud#what
 */
 
 #include "arduino_secrets.h"

@@ -44,7 +44,7 @@ typedef enum
    CTOR/DTOR
  ******************************************************************************/
 LoRaConnectionHandler::LoRaConnectionHandler(char const * appeui, char const * appkey, _lora_band const band, char const * channelMask, _lora_class const device_class)
-: ConnectionHandler{false}
+: ConnectionHandler{false, NetworkAdapter::LORA}
 , _appeui(appeui)
 , _appkey(appkey)
 , _band(band)
@@ -124,8 +124,9 @@ NetworkConnectionState LoRaConnectionHandler::update_handleConnecting()
   bool const network_status = _modem.joinOTAA(_appeui, _appkey);
   if (network_status != true)
   {
-    Debug.print(DBG_ERROR, F("Something went wrong; are you indoor? Move near a window, then reset and retry."));
-    return NetworkConnectionState::ERROR;
+    Debug.print(DBG_ERROR, F("Connection to the network failed"));
+    Debug.print(DBG_INFO, F("Retrying in \"%d\" milliseconds"), CHECK_INTERVAL_TABLE[static_cast<unsigned int>(NetworkConnectionState::CONNECTING)]);
+    return NetworkConnectionState::INIT;
   }
   else
   {

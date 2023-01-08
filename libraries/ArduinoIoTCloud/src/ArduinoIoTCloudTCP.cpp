@@ -38,7 +38,7 @@
 #include "tls/utility/CryptoUtil.h"
 #endif
 
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION)
+#ifdef BOARD_STM32H7
 #  include "tls/utility/SHA256.h"
 #  include <stm32h7xx_hal_rtc_ex.h>
 #  include <WiFi.h>
@@ -56,7 +56,7 @@
  * EXTERN
  ******************************************************************************/
 
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION)
+#ifdef BOARD_STM32H7
 extern RTC_HandleTypeDef RTCHandle;
 #endif
 
@@ -151,7 +151,7 @@ int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, 
 #endif /* AVR */
 
 #if OTA_ENABLED && !defined(__AVR__)
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION)
+#if defined(BOARD_STM32H7)
   /* The length of the application can be retrieved the same way it was
    * communicated to the bootloader, that is by writing to the non-volatile
    * storage registers of the RTC.
@@ -307,9 +307,8 @@ int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, 
 #if defined (ARDUINO_ARCH_SAMD) || defined (ARDUINO_ARCH_MBED)
   if (enable_watchdog) {
     watchdog_enable();
-#if defined (WIFI_HAS_FEED_WATCHDOG_FUNC) || defined (ARDUINO_PORTENTA_H7_WIFI_HAS_FEED_WATCHDOG_FUNC)
-      WiFi.setFeedWatchdogFunc(watchdog_reset);
-#endif
+    bool const use_ethernet = _connection->getInterface() == NetworkAdapter::ETHERNET ? true : false;
+    watchdog_enable_network_feed(use_ethernet);
   }
 #endif
 
@@ -344,8 +343,8 @@ void ArduinoIoTCloudTCP::update()
   }
   _state = next_state;
 
-  /* This watchdog feed is actually needed only by the RP2040 CONNECT cause its
-   * maximum watchdog window is 8389ms; despite this we feed it for all 
+  /* This watchdog feed is actually needed only by the RP2040 Connect because its
+   * maximum watchdog window is 8389 ms; despite this we feed it for all 
    * supported ARCH to keep code aligned.
    */
 #if defined (ARDUINO_ARCH_SAMD) || defined (ARDUINO_ARCH_MBED)
@@ -488,7 +487,7 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_CheckDeviceConfig()
 
   if(_deviceSubscribedToThing == true)
   {
-    /* Unsubscribe from old things topics and go on with a new subsctiption */
+    /* Unsubscribe from old things topics and go on with a new subscription */
     _mqttClient.unsubscribe(_shadowTopicIn);
     _mqttClient.unsubscribe(_dataTopicIn);
     _deviceSubscribedToThing = false;
@@ -570,7 +569,7 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SubscribeThingTopics()
   execCloudEventCallback(ArduinoIoTCloudEvent::CONNECT);
   _deviceSubscribedToThing = true;
 
-  /*Add retry wait time otherwise we are trying to reconnect every 250ms...*/
+  /*Add retry wait time otherwise we are trying to reconnect every 250 ms...*/
   return State::RequestLastValues;
 }
 
@@ -829,8 +828,9 @@ void ArduinoIoTCloudTCP::onOTARequest()
   _ota_error = rp2040_connect_onOTARequest(_ota_url.c_str());
 #endif
 
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION)
-  _ota_error = portenta_h7_onOTARequest(_ota_url.c_str());
+#ifdef BOARD_STM32H7
+  bool const use_ethernet = _connection->getInterface() == NetworkAdapter::ETHERNET ? true : false;
+  _ota_error = portenta_h7_onOTARequest(_ota_url.c_str(), use_ethernet);
 #endif
 }
 #endif
