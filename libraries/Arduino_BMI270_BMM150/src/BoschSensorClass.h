@@ -32,13 +32,22 @@ class BoschSensorClass {
     BoschSensorClass(TwoWire& wire = Wire);
     ~BoschSensorClass() {}
 
+    void setContinuousMode();
+    void oneShotMode();
+
     int begin();
     void end();
 
-    void debug(arduino::Stream&);
+    void debug(Stream&);
     #ifdef __MBED__
     void onInterrupt(mbed::Callback<void()>);
-    static const PinName BMI270_INT1 = p11;
+    void setInterruptPin(PinName irq_pin) {
+      BMI270_INT1 = irq_pin;
+    }
+    void setInterruptPin(pin_size_t irq_pin) {
+      BMI270_INT1 = digitalPinToPinName(irq_pin);
+    }
+    PinName BMI270_INT1 = NC;
     #endif
     // Accelerometer
     virtual int readAcceleration(float& x, float& y, float& z); // Results are in G (earth gravity).
@@ -82,6 +91,8 @@ class BoschSensorClass {
     struct bmi2_dev bmi2;
     struct bmm150_dev bmm1;
     uint16_t _int_status;
+  private:
+    bool continuousMode;
 };
 
 extern BoschSensorClass IMU_BMI270_BMM150;

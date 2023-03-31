@@ -7,13 +7,14 @@
 #include "mbed_shared_queues.h"
 #include "drivers/InterruptIn.h"
 
-static mbed::InterruptIn irq(BoschSensorClass::BMI270_INT1, PullDown);
 static events::EventQueue queue(10 * EVENTS_EVENT_SIZE);
-static rtos::Thread event_t(osPriorityHigh, 768, nullptr, "events");
 #endif
 BoschSensorClass::BoschSensorClass(TwoWire& wire)
 {
   _wire = &wire;
+  #ifdef TARGET_ARDUINO_NANO33BLE
+  BMI270_INT1 = p11;
+  #endif
 }
 
 void BoschSensorClass::debug(Stream& stream)
@@ -23,6 +24,11 @@ void BoschSensorClass::debug(Stream& stream)
 #ifdef __MBED__
 void BoschSensorClass::onInterrupt(mbed::Callback<void(void)> cb)
 {
+  if (BMI270_INT1 == NC) {
+    return;
+  }
+  static mbed::InterruptIn irq(BMI270_INT1, PullDown);
+  static rtos::Thread event_t(osPriorityHigh, 768, nullptr, "events");
   _cb = cb;
   event_t.start(callback(&queue, &events::EventQueue::dispatch_forever));
   irq.rise(mbed::callback(this, &BoschSensorClass::interrupt_handler));
@@ -67,15 +73,37 @@ int BoschSensorClass::begin() {
   print_rslt(rslt);
 
   _initialized = true;
+
+  return 1;
 }
+
+
+void BoschSensorClass::setContinuousMode() {
+  bmi2_set_fifo_config(BMI2_FIFO_GYR_EN | BMI2_FIFO_ACC_EN, 1, &bmi2);
+  continuousMode = true;
+}
+
+void BoschSensorClass::oneShotMode() {
+  bmi2_set_fifo_config(BMI2_FIFO_GYR_EN | BMI2_FIFO_ACC_EN, 0, &bmi2);
+  continuousMode = false;
+}
+
+// default range is +-4G, so conversion factor is (((1 << 15)/4.0f))
+#define INT16_to_G   (8192.0f)
 
 // Accelerometer
 int BoschSensorClass::readAcceleration(float& x, float& y, float& z) {
   struct bmi2_sens_data sensor_data;
-  bmi2_get_sensor_data(&sensor_data, &bmi2);
-  x = sensor_data.acc.x;
-  y = sensor_data.acc.y;
-  z = sensor_data.acc.z;
+  auto ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  #ifdef TARGET_ARDUINO_NANO33BLE
+  x = -sensor_data.acc.y / INT16_to_G;
+  y = -sensor_data.acc.x / INT16_to_G;
+  #else
+  x = sensor_data.acc.x / INT16_to_G;
+  y = sensor_data.acc.y / INT16_to_G;
+  #endif
+  z = sensor_data.acc.z / INT16_to_G;
+  return (ret == 0);
 }
 
 int BoschSensorClass::accelerationAvailable() {
@@ -94,13 +122,22 @@ float BoschSensorClass::accelerationSampleRate() {
   return (1 << sens_cfg.cfg.acc.odr) * 0.39;
 }
 
+// default range is +-2000dps, so conversion factor is (((1 << 15)/4.0f))
+#define INT16_to_DPS   (16.384f)
+
 // Gyroscope
 int BoschSensorClass::readGyroscope(float& x, float& y, float& z) {
   struct bmi2_sens_data sensor_data;
-  bmi2_get_sensor_data(&sensor_data, &bmi2);
-  x = sensor_data.gyr.x;
-  y = sensor_data.gyr.y;
-  z = sensor_data.gyr.z;
+  auto ret = bmi2_get_sensor_data(&sensor_data, &bmi2);
+  #ifdef TARGET_ARDUINO_NANO33BLE
+  x = -sensor_data.gyr.y / INT16_to_DPS;
+  y = -sensor_data.gyr.x / INT16_to_DPS;
+  #else
+  x = sensor_data.gyr.x / INT16_to_DPS;
+  y = sensor_data.gyr.y / INT16_to_DPS;
+  #endif
+  z = sensor_data.gyr.z / INT16_to_DPS;
+  return (ret == 0);
 }
 
 int BoschSensorClass::gyroscopeAvailable() {
@@ -122,10 +159,15 @@ float BoschSensorClass::gyroscopeSampleRate() {
 // Magnetometer
 int BoschSensorClass::readMagneticField(float& x, float& y, float& z) {
   struct bmm150_mag_data mag_data;
-  bmm150_read_mag_data(&mag_data, &bmm1);
+  int const rc = bmm150_read_mag_data(&mag_data, &bmm1);
   x = mag_data.x;
   y = mag_data.y;
   z = mag_data.z;
+
+  if (rc == BMM150_OK)
+    return 1;
+  else
+    return 0;
 }
 
 int BoschSensorClass::magneticFieldAvailable() {
@@ -291,6 +333,10 @@ void BoschSensorClass::interrupt_handler()
 #endif
 static void panic_led_trap(void)
 {
+#if !defined(LED_BUILTIN)
+  static int const LED_BUILTIN = 2;
+#endif
+
   pinMode(LED_BUILTIN, OUTPUT);
   while (1)
   {
@@ -362,11 +408,11 @@ void BoschSensorClass::print_rslt(int8_t rslt)
       panic_led_trap();
       break;
     case BMI2_E_AUX_INVALID_CFG:
-      _debug->println("Error [" + String(rslt) + "] : Invalid auxilliary configuration");
+      _debug->println("Error [" + String(rslt) + "] : Invalid auxiliary configuration");
       panic_led_trap();
       break;
     case BMI2_E_AUX_BUSY:
-      _debug->println("Error [" + String(rslt) + "] : Auxilliary busy");
+      _debug->println("Error [" + String(rslt) + "] : Auxiliary busy");
       panic_led_trap();
       break;
     case BMI2_E_SELF_TEST_FAIL:
