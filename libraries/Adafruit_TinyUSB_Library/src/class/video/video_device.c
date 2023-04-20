@@ -1,4 +1,4 @@
-/* 
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2021 Koji KITAYAMA
@@ -33,6 +33,12 @@
 #include "device/usbd_pvt.h"
 
 #include "video_device.h"
+
+#if defined(ARDUINO_ARCH_ESP32) && !defined(tu_static)
+#define tu_static static
+static inline int tu_memset_s(void *dest, size_t destsz, int ch, size_t count) { if (count > destsz) { return -1; } memset(dest, ch, count); return 0; }
+static inline int tu_memcpy_s(void *dest, size_t destsz, const void * src, size_t count ) { if (count > destsz) { return -1; } memcpy(dest, src, count); return 0; }
+#endif
 
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF
@@ -125,11 +131,11 @@ typedef struct TU_ATTR_PACKED {
 //--------------------------------------------------------------------+
 // INTERNAL OBJECT & FUNCTION DECLARATION
 //--------------------------------------------------------------------+
-CFG_TUSB_MEM_SECTION static videod_interface_t _videod_itf[CFG_TUD_VIDEO];
-CFG_TUSB_MEM_SECTION static videod_streaming_interface_t _videod_streaming_itf[CFG_TUD_VIDEO_STREAMING];
+CFG_TUSB_MEM_SECTION tu_static videod_interface_t _videod_itf[CFG_TUD_VIDEO];
+CFG_TUSB_MEM_SECTION tu_static videod_streaming_interface_t _videod_streaming_itf[CFG_TUD_VIDEO_STREAMING];
 
-static uint8_t const _cap_get     = 0x1u; /* support for GET */
-static uint8_t const _cap_get_set = 0x3u; /* support for GET and SET */
+tu_static uint8_t const _cap_get     = 0x1u; /* support for GET */
+tu_static uint8_t const _cap_get_set = 0x3u; /* support for GET and SET */
 
 /** Get interface number from the interface descriptor
  *

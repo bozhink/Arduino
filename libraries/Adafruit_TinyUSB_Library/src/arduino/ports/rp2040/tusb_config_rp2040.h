@@ -52,11 +52,6 @@ extern "C" {
 #define CFG_TUSB_DEBUG 0
 #endif
 
-#if CFG_TUSB_DEBUG
-#define CFG_TUSB_DEBUG_PRINTF serial1_printf
-extern int serial1_printf(const char *__restrict __format, ...);
-#endif
-
 #define CFG_TUSB_MEM_SECTION
 #define CFG_TUSB_MEM_ALIGN TU_ATTR_ALIGNED(4)
 
@@ -100,17 +95,18 @@ extern int serial1_printf(const char *__restrict __format, ...);
 // Number of hub devices
 #define CFG_TUH_HUB 1
 
-// max device support (excluding hub device)
-#define CFG_TUH_DEVICE_MAX (CFG_TUH_HUB ? 4 : 1) // hub typically has 4 ports
+// max device support (excluding hub device): 1 hub typically has 4 ports
+#define CFG_TUH_DEVICE_MAX (3 * CFG_TUH_HUB + 1)
 
 // Enable tuh_edpt_xfer() API
-//#define CFG_TUH_API_EDPT_XFER       1
+// #define CFG_TUH_API_EDPT_XFER       1
 
 // Number of mass storage
 #define CFG_TUH_MSC 1
 
 // Number of HIDs
-#define CFG_TUH_HID 4
+// typical keyboard + mouse device can have 3,4 HID interfaces
+#define CFG_TUH_HID (3 * CFG_TUH_DEVICE_MAX)
 
 // Number of CDC interfaces
 #define CFG_TUH_CDC 1

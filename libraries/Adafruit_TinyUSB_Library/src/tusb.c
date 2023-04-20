@@ -39,6 +39,12 @@
 #include "host/usbh_classdriver.h"
 #endif
 
+#if defined(ARDUINO_ARCH_ESP32) && !defined(tu_static)
+#define tu_static static
+static inline int tu_memset_s(void *dest, size_t destsz, int ch, size_t count) { if (count > destsz) { return -1; } memset(dest, ch, count); return 0; }
+static inline int tu_memcpy_s(void *dest, size_t destsz, const void * src, size_t count ) { if (count > destsz) { return -1; } memcpy(dest, src, count); return 0; }
+#endif
+
 //--------------------------------------------------------------------+
 // Public API
 //--------------------------------------------------------------------+
@@ -495,7 +501,7 @@ void tu_print_mem(void const *buf, uint32_t count, uint8_t indent)
       tu_printf("%04X: ", 16*i/item_per_line);
     }
 
-    memcpy(&value, buf8, size);
+    tu_memcpy_s(&value, sizeof(value), buf8, size);
     buf8 += size;
 
     tu_printf(" ");

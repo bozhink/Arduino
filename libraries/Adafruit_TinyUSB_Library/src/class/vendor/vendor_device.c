@@ -33,6 +33,11 @@
 
 #include "vendor_device.h"
 
+#if defined(ARDUINO_ARCH_ESP32) && !defined(tu_static)
+#define tu_static static
+static inline int tu_memset_s(void *dest, size_t destsz, int ch, size_t count) { if (count > destsz) { return -1; } memset(dest, ch, count); return 0; }
+static inline int tu_memcpy_s(void *dest, size_t destsz, const void * src, size_t count ) { if (count > destsz) { return -1; } memcpy(dest, src, count); return 0; }
+#endif
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF
 //--------------------------------------------------------------------+
@@ -59,7 +64,7 @@ typedef struct
   CFG_TUSB_MEM_ALIGN uint8_t epin_buf[CFG_TUD_VENDOR_EPSIZE];
 } vendord_interface_t;
 
-CFG_TUSB_MEM_SECTION static vendord_interface_t _vendord_itf[CFG_TUD_VENDOR];
+CFG_TUSB_MEM_SECTION tu_static vendord_interface_t _vendord_itf[CFG_TUD_VENDOR];
 
 #define ITF_MEM_RESET_SIZE   offsetof(vendord_interface_t, rx_ff)
 
