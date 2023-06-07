@@ -63,7 +63,7 @@ extern "C" {
 
 #define CFG_TUD_CDC 1
 #define CFG_TUD_MSC 1
-#define CFG_TUD_HID 1
+#define CFG_TUD_HID 2
 #define CFG_TUD_MIDI 1
 #define CFG_TUD_VENDOR 1
 
@@ -109,7 +109,10 @@ extern "C" {
 #define CFG_TUH_HID (3 * CFG_TUH_DEVICE_MAX)
 
 // Number of CDC interfaces
+// FTDI and CP210x are not part of CDC class, only to re-use CDC driver API
 #define CFG_TUH_CDC 1
+#define CFG_TUH_CDC_FTDI 1
+#define CFG_TUH_CDC_CP210X 1
 
 // RX & TX fifo size
 #define CFG_TUH_CDC_RX_BUFSIZE 128

@@ -33,13 +33,6 @@
 
 #include "cdc_device.h"
 
-#if defined(ARDUINO_ARCH_ESP32) && !defined(tu_static)
-#define tu_static static
-static inline int tu_memset_s(void *dest, size_t destsz, int ch, size_t count) { if (count > destsz) { return -1; } memset(dest, ch, count); return 0; }
-static inline int tu_memcpy_s(void *dest, size_t destsz, const void * src, size_t count ) { if (count > destsz) { return -1; } memcpy(dest, src, count); return 0; }
-#endif
-
-
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF
 //--------------------------------------------------------------------+
@@ -60,7 +53,7 @@ typedef struct
 
   /*------------- From this point, data is not cleared by bus reset -------------*/
   char    wanted_char;
-  cdc_line_coding_t line_coding;
+  TU_ATTR_ALIGNED(4) cdc_line_coding_t line_coding;
 
   // FIFO
   tu_fifo_t rx_ff;

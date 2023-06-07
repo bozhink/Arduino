@@ -20,7 +20,7 @@
 
  * Requirements:
  * - [Pico-PIO-USB](https://github.com/sekigon-gonnoc/Pico-PIO-USB) library
- * - 2 consecutive GPIOs: D+ is defined by PIN_PIO_USB_HOST_DP, D- = D+ +1
+ * - 2 consecutive GPIOs: D+ is defined by PIN_USB_HOST_DP, D- = D+ +1
  * - Provide VBus (5v) and GND for peripheral
  * - CPU Speed must be either 120 or 240 Mhz. Selected via "Menu -> CPU Speed"
  */
@@ -32,17 +32,17 @@
 #include "Adafruit_TinyUSB.h"
 
 // Pin D+ for host, D- = D+ + 1
-#ifndef PIN_PIO_USB_HOST_DP
-#define PIN_PIO_USB_HOST_DP       20
+#ifndef PIN_USB_HOST_DP
+#define PIN_USB_HOST_DP       16
 #endif
 
 // Pin for enabling Host VBUS. comment out if not used
-#ifndef PIN_PIO_USB_HOST_VBUSEN
-#define PIN_PIO_USB_HOST_VBUSEN        22
+#ifndef PIN_5V_EN
+#define PIN_5V_EN        18
 #endif
 
-#ifndef PIN_PIO_USB_HOST_VBUSEN_STATE
-#define PIN_PIO_USB_HOST_VBUSEN_STATE  1
+#ifndef PIN_5V_EN_STATE
+#define PIN_5V_EN_STATE  1
 #endif
 
 // USB Host object
@@ -56,10 +56,8 @@ Adafruit_USBH_CDC  SerialHost;
 //--------------------------------------------------------------------+
 
 void setup() {
-  Serial1.begin(115200);
-
   Serial.begin(115200);
-  while ( !Serial ) delay(10);   // wait for native usb
+  // while ( !Serial ) delay(10);   // wait for native usb
 
   Serial.println("TinyUSB Host Serial Echo Example");
 }
@@ -89,7 +87,7 @@ void loop()
 //--------------------------------------------------------------------+
 
 void setup1() {
-  while ( !Serial ) delay(10);   // wait for native usb
+  // while ( !Serial ) delay(10);   // wait for native usb
   Serial.println("Core1 setup to run TinyUSB host with pio-usb");
 
   // Check for CPU frequency, must be multiple of 120Mhz for bit-banging USB
@@ -105,26 +103,28 @@ void setup1() {
     }
   }
 
-#ifdef PIN_PIO_USB_HOST_VBUSEN
-  pinMode(PIN_PIO_USB_HOST_VBUSEN, OUTPUT);
+#ifdef PIN_5V_EN
+  pinMode(PIN_5V_EN, OUTPUT);
 
   // power off first
-  digitalWrite(PIN_PIO_USB_HOST_VBUSEN, 1-PIN_PIO_USB_HOST_VBUSEN_STATE);
+  digitalWrite(PIN_5V_EN, 1-PIN_5V_EN_STATE);
   delay(1);
 
   // power on
-  digitalWrite(PIN_PIO_USB_HOST_VBUSEN, PIN_PIO_USB_HOST_VBUSEN_STATE);
+  digitalWrite(PIN_5V_EN, PIN_5V_EN_STATE);
   delay(10);
 #endif
 
   pio_usb_configuration_t pio_cfg = PIO_USB_DEFAULT_CONFIG;
-  pio_cfg.pin_dp = PIN_PIO_USB_HOST_DP;
+  pio_cfg.pin_dp = PIN_USB_HOST_DP;
   USBHost.configure_pio_usb(1, &pio_cfg);
 
   // run host stack on controller (rhport) 1
   // Note: For rp2040 pico-pio-usb, calling USBHost.begin() on core1 will have most of the
   // host bit-banging processing works done in core1 to free up core0 for other works
   USBHost.begin(1);
+
+  SerialHost.begin(115200);
 }
 
 void loop1()
@@ -140,23 +140,20 @@ void loop1()
 //--------------------------------------------------------------------+
 // TinyUSB Host callbacks
 //--------------------------------------------------------------------+
+extern "C" {
 
 // Invoked when a device with CDC interface is mounted
 // idx is index of cdc interface in the internal pool.
 void tuh_cdc_mount_cb(uint8_t idx) {
   // bind SerialHost object to this interface index
-  SerialHost.setInterfaceIndex(idx);
-  SerialHost.begin(115200);
-
+  SerialHost.mount(idx);
   Serial.println("SerialHost is connected to a new CDC device");
 }
 
 // Invoked when a device with CDC interface is unmounted
 void tuh_cdc_umount_cb(uint8_t idx) {
-  if (idx == SerialHost.getInterfaceIndex()) {
-    // unbind SerialHost if this interface is unmounted
-    SerialHost.end();
+  SerialHost.umount(idx);
+  Serial.println("SerialHost is disconnected");
+}
 
-    Serial.println("SerialHost is disconnected");
-  }
 }
