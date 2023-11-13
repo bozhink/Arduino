@@ -52,6 +52,10 @@ extern "C" {
 #define CFG_TUSB_DEBUG 0
 #endif
 
+// For selectively disable device log (when > CFG_TUSB_DEBUG)
+// #define CFG_TUD_LOG_LEVEL 3
+// #define CFG_TUH_LOG_LEVEL 3
+
 #define CFG_TUSB_MEM_SECTION
 #define CFG_TUSB_MEM_ALIGN TU_ATTR_ALIGNED(4)
 

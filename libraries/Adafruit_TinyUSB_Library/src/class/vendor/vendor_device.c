@@ -24,6 +24,11 @@
  * This file is part of the TinyUSB stack.
  */
 
+// ESP32 out-of-sync
+#ifdef ARDUINO_ARCH_ESP32
+#include "arduino/ports/esp32/tusb_config_esp32.h"
+#endif
+
 #include "tusb_option.h"
 
 #if (CFG_TUD_ENABLED && CFG_TUD_VENDOR)
@@ -59,7 +64,7 @@ typedef struct
   CFG_TUSB_MEM_ALIGN uint8_t epin_buf[CFG_TUD_VENDOR_EPSIZE];
 } vendord_interface_t;
 
-CFG_TUSB_MEM_SECTION tu_static vendord_interface_t _vendord_itf[CFG_TUD_VENDOR];
+CFG_TUD_MEM_SECTION tu_static vendord_interface_t _vendord_itf[CFG_TUD_VENDOR];
 
 #define ITF_MEM_RESET_SIZE   offsetof(vendord_interface_t, rx_ff)
 

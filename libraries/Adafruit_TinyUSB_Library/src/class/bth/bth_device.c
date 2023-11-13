@@ -31,6 +31,12 @@
 //--------------------------------------------------------------------+
 // INCLUDE
 //--------------------------------------------------------------------+
+
+// ESP32 out-of-sync
+#ifdef ARDUINO_ARCH_ESP32
+#include "arduino/ports/esp32/tusb_config_esp32.h"
+#endif
+
 #include "bth_device.h"
 #include <device/usbd_pvt.h>
 
@@ -55,7 +61,7 @@ typedef struct
 //--------------------------------------------------------------------+
 // INTERNAL OBJECT & FUNCTION DECLARATION
 //--------------------------------------------------------------------+
-CFG_TUSB_MEM_SECTION btd_interface_t _btd_itf;
+CFG_TUD_MEM_SECTION btd_interface_t _btd_itf;
 
 static bool bt_tx_data(uint8_t ep, void *data, uint16_t len)
 {
