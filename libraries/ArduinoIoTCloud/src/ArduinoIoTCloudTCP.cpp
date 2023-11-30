@@ -39,7 +39,7 @@
   #include "tls/utility/CryptoUtil.h"
 #endif
 
-#ifdef ARDUINO_ARCH_ESP32
+#ifdef BOARD_HAS_SECRET_KEY
   #include "tls/AIoTCUPCert.h"
 #endif
 
@@ -132,16 +132,7 @@ int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, 
   _brokerAddress = brokerAddress;
   _brokerPort = brokerPort;
 
-#if defined(__AVR__)
-  String const nina_fw_version = WiFi.firmwareVersion();
-  if (nina_fw_version < "1.4.2")
-  {
-    DEBUG_ERROR("ArduinoIoTCloudTCP::%s NINA firmware needs to be >= 1.4.2 to support cloud on Uno WiFi Rev. 2, current %s", __FUNCTION__, nina_fw_version.c_str());
-    return 0;
-  }
-#endif /* AVR */
-
-#if OTA_ENABLED && !defined(__AVR__)
+#if OTA_ENABLED
   _ota_img_sha256 = OTA::getImageSHA256();
   DEBUG_VERBOSE("SHA256: HASH(%d) = %s", strlen(_ota_img_sha256.c_str()), _ota_img_sha256.c_str());
 #endif /* OTA_ENABLED */
@@ -181,6 +172,8 @@ int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, 
   #else
   _sslClient.setCACertBundle(x509_crt_bundle);
   #endif
+#elif defined(ARDUINO_EDGE_CONTROL)
+  _sslClient.appendCustomCACert(AIoTUPCert);
 #endif
 
   _mqttClient.setClient(_sslClient);
@@ -226,6 +219,12 @@ int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, 
     return 0;
   }
 #endif /* BOARD_HAS_OFFLOADED_ECCX08 */
+
+#if defined(ARDUINO_UNOWIFIR4)
+  if (String(WiFi.firmwareVersion()) < String("0.2.0")) {
+    DEBUG_ERROR("ArduinoIoTCloudTCP::%s In order to connect to Arduino IoT Cloud, WiFi firmware needs to be >= 0.2.0, current %s", __FUNCTION__, WiFi.firmwareVersion());
+  }
+#endif
 
   /* Since we do not control what code the user inserts
    * between ArduinoIoTCloudTCP::begin() and the first
@@ -334,12 +333,6 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_ConnectMqttBroker()
   unsigned long reconnection_retry_delay = (1 << _last_connection_attempt_cnt) * AIOT_CONFIG_RECONNECTION_RETRY_DELAY_ms;
   reconnection_retry_delay = min(reconnection_retry_delay, static_cast<unsigned long>(AIOT_CONFIG_MAX_RECONNECTION_RETRY_DELAY_ms));
   _next_connection_attempt_tick = millis() + reconnection_retry_delay;
-
-#if defined(ARDUINO_UNOWIFIR4)
-    if (String(WiFi.firmwareVersion()) < String("0.2.0")) {
-      DEBUG_ERROR("ArduinoIoTCloudTCP::%s In order to connect to Arduino IoT Cloud, WiFi firmware needs to be >= 0.2.0, current %s", __FUNCTION__, WiFi.firmwareVersion());
-    }
-#endif
 
   DEBUG_ERROR("ArduinoIoTCloudTCP::%s could not connect to %s:%d", __FUNCTION__, _brokerAddress.c_str(), _brokerPort);
   DEBUG_ERROR("ArduinoIoTCloudTCP::%s %d connection attempt at tick time %d", __FUNCTION__, _last_connection_attempt_cnt, _next_connection_attempt_tick);
@@ -483,18 +476,14 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SubscribeThingTopics()
   if (!_mqttClient.subscribe(_dataTopicIn))
   {
     DEBUG_ERROR("ArduinoIoTCloudTCP::%s could not subscribe to %s", __FUNCTION__, _dataTopicIn.c_str());
-#if !defined(__AVR__)
     DEBUG_ERROR("Check your thing configuration, and press the reset button on your board.");
-#endif
     return State::SubscribeThingTopics;
   }
 
   if (!_mqttClient.subscribe(_shadowTopicIn))
   {
     DEBUG_ERROR("ArduinoIoTCloudTCP::%s could not subscribe to %s", __FUNCTION__, _shadowTopicIn.c_str());
-#if !defined(__AVR__)
     DEBUG_ERROR("Check your thing configuration, and press the reset button on your board.");
-#endif
     return State::SubscribeThingTopics;
   }
 

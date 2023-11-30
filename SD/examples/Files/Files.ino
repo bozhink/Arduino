@@ -26,7 +26,7 @@ void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(9600);
   while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
+    ;  // wait for serial port to connect. Needed for native USB port only
   }
 
 
@@ -34,7 +34,8 @@ void setup() {
 
   if (!SD.begin(4)) {
     Serial.println("initialization failed!");
-    while (1);
+    while (1)
+      ;
   }
   Serial.println("initialization done.");
 
@@ -70,6 +71,3 @@ void setup() {
 void loop() {
   // nothing happens after setup finishes.
 }
-
-
-
