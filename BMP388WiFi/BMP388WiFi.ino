@@ -101,7 +101,7 @@ void initializeSerial(void) {
 
 void initializeSensor(void) {
   if (!bmp.begin()) {
-    digitalWrite(LED_BUILTIN, HIGH);
+    digitalWrite(D2, HIGH);
     while (1);
   }
 
