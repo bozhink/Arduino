@@ -86,6 +86,11 @@ extern "C" {
 #define CFG_TUD_HID 2
 #define CFG_TUD_MIDI 1
 #define CFG_TUD_VENDOR 1
+#define CFG_TUD_VIDEO 1           // number of video control interfaces
+#define CFG_TUD_VIDEO_STREAMING 1 // number of video streaming interfaces
+
+// video streaming endpoint buffer size
+#define CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE 256
 
 // CDC FIFO size of TX and RX
 #define CFG_TUD_CDC_RX_BUFSIZE 256
@@ -133,6 +138,7 @@ extern "C" {
 #define CFG_TUH_CDC 1
 #define CFG_TUH_CDC_FTDI 1
 #define CFG_TUH_CDC_CP210X 1
+#define CFG_TUH_CDC_CH34X 1
 
 // RX & TX fifo size
 #define CFG_TUH_CDC_RX_BUFSIZE 128

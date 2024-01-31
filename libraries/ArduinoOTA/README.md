@@ -36,6 +36,9 @@ The library is a modification of the Arduino WiFi101OTA library.
 
 ## Supported networking libraries
 
+The ArduinoOTA library will work any proper Arduino Ethernet or WiFi library. For Ethernet library add `#define OTETHERNET` before including the ArduinoOTA library. If you don't want a network port or the library doesn't support it, add `#define NO_OTA_PORT` before including the ArduinoOTA library. If you only want to use InternalStorage without the network upload from IDE, add `#define NO_OTA_NETWORK` before including the ArduinoOTA library.
+
+Tested libraries are:
 * Ethernet library - Ethernet shields and modules with Wiznet 5100, 5200 and 5500 chips
 * WiFi101 - MKR 1000, Arduino WiFi101 shield and Adafruit WINC1500 WiFi shield or module
 * WiFiNINA - MKR 1010, MKR 4000, Nano 33 IoT and any supported MCU with attached ESP32 as SPI network adapter with WiFiNINA firmware
@@ -44,7 +47,7 @@ The library is a modification of the Arduino WiFi101OTA library.
 * EthernetENC - shields and modules with ENC28j60 chip
 * WiFi library of the Pico Core including its Ethernet network interfaces
 
-EthernetENC library doesn't support UDP multicast for MDNS, so Arduino IDE will not show the network upload port.
+EthernetENC and WiFiEspAT with esp8266 doesn't support UDP multicast for MDNS, so Arduino IDE will not show the network upload port.
 
 ## Installation
 
@@ -66,9 +69,11 @@ With InternalStorage the sketch binary size is limited to half of the available 
 
 For upload the 'OTA programmer' technique can be configured.
 
+The upload tool in IDE gas a timeout 10 seconds. For some sketch size, MCU or library it is too short. To set longer timeout, [download](https://github.com/arduino/arduinoOTA/releases) newer version of the tool, replace the 1.3.0 arduinoOTA executable and in platform.local.txt add the -t option in seconds.
+
 ## OTA Upload from IDE without 'network port'
 
-Some of the supported networking libraries don't have the UDP.beginMulticast function and can't start a MDNS service to propagate the network port for Arduino IDE. And sometimes the MDNS port is not detected for the good libraries too. Arduino IDE doesn't yet allow to enter the IP address. 
+Some networking libraries don't have the UDP.beginMulticast function and can't start a MDNS service to propagate the network port for Arduino IDE. And sometimes the MDNS port is not detected for the good libraries too. Arduino IDE doesn't yet allow to enter the IP address. 
 
 The workaround is to configure a fake programmer for Arduino OTA. You can use [my_boards](https://github.com/jandrassy/my_boards) as starting point. For Arduino Mega it is the best option for all ArduinoOTA aspects, for other boards it gives you control about your custom settings. In your copy of my_boards in programmers.txt, configure the IP address and restart the IDE. Note: the esp boards packages can't be used as referenced packages in my_boards style.
 
@@ -104,7 +109,7 @@ The sizes of networking library and the SD library allows the use of ArduinoOTA 
 
 *Side note: There are other network upload options for here excluded ATmega328p: ([Ariadne bootloader](https://github.com/loathingKernel/ariadne-bootloader) for Wiznet chips, [WiFiLink firmware](https://github.com/jandrassy/arduino-firmware-wifilink) for the esp8266) or [AvrDudeTelnet](https://github.com/jandrassy/lab/blob/master/AvrDudeTelnet/AvrDudeTelnet.ino) upload (Linux only).*
 
-For upload with ArduinoOTA library over InternalStorage, Optiboot bootloader with [`copy_flash_pages` function](https://github.com/Optiboot/optiboot/pull/269) is required. MegaCore and MightyCore by [MCUDude](https://github.com/MCUdude) have Optiboot binaries with `copy_flash_pages` function ready to be burn to your ATmega.
+For upload with ArduinoOTA library over InternalStorage, Optiboot bootloader with [`copy_flash_pages` function](https://github.com/Optiboot/optiboot/pull/269) is required. MegaCore and MightyCore by [MCUDude](https://github.com/MCUdude) before version 3 has Optiboot binaries with `copy_flash_pages` function ready to be burn to your ATmega.
 
 The most common Arduino ATmega board with more than 64 kB of flash memory is Arduino Mega. To use it with ArduinoOTA library, you can't use it directly with the Arduino AVR package, because the package doesn't have the right fuse settings for Mega with Optiboot. You can download [my boards definitions](https://github.com/jandrassy/my_boards) and use it [to burn](https://arduino.stackexchange.com/questions/473/how-do-i-burn-the-bootloader) the modified Optiboot and to upload sketches to your Mega over USB and over network. 
 
@@ -184,6 +189,13 @@ platform.txt in my_boards and the fake programmer tool definition in platform.lo
 ### arduinoOTA tool returns "Failed to reset the board, upload failed"
 
 The wrong upload command from AVR boards platform.txt is used. Did you copy `extras/avr/platform.local.txt` next to platform.txt as required?
+
+### Upload fails after 10 seconds
+
+If upload fails with `Flashing sketch ... Error flashing the sketch` after 10 seconds, the problem is the 10 seconds timeout of IDE's upload tool.
+
+To set longer timeout, [download](https://github.com/arduino/arduinoOTA/releases) newer version of the tool, replace the 1.3.0 arduinoOTA executable and in platform.local.txt add the -t option in seconds.
+
 
 ### Upload returns OK but the sketch is not replaced.
 
