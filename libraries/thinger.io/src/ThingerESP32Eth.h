@@ -1,16 +1,19 @@
 #ifndef THINGER_ESP32ETH_H
 #define THINGER_ESP32ETH_H
 
-// TODO ESP32 TROUGHT ETHERNET DOES NOT SUPPORT SSL/TLS CONNECTIONS
-#define _DISABLE_TLS_
-
 #ifdef THINGER_FREE_RTOS
 #include "ThingerESP32FreeRTOS.h"
 #endif
 
 #include <ETH.h>
 #include <ThingerClient.h>
-#include <functional>
+
+#ifdef _DISABLE_TLS_
+typedef WiFiClient ESP32Client;
+#else
+#include <WiFiClientSecure.h>
+typedef WiFiClientSecure ESP32Client;
+#endif
 
 class ThingerESP32Eth : public ThingerClient
 
@@ -26,25 +29,25 @@ public:
             ,ThingerESP32FreeRTOS(static_cast<ThingerClient&>(*this))
             #endif
     {
-        
+
          WiFi.onEvent([](WiFiEvent_t event){
             switch (event) {
-                case SYSTEM_EVENT_ETH_START:
+                case ARDUINO_EVENT_ETH_START:
                     THINGER_DEBUG("NETWORK", "ETH Started");
                     break;
-                case SYSTEM_EVENT_ETH_CONNECTED:
+                case ARDUINO_EVENT_ETH_CONNECTED:
                     THINGER_DEBUG("NETWORK", "ETH Connected");
                     break;
-                case SYSTEM_EVENT_ETH_GOT_IP:
+                case ARDUINO_EVENT_ETH_GOT_IP:
                     THINGER_DEBUG_VALUE("NETWORK", "ETH MAC: ", ETH.macAddress());
                     THINGER_DEBUG_VALUE("NETWORK", "ETH IP: ", ETH.localIP());
                     THINGER_DEBUG_VALUE("NETWORK", "ETH FullDuplex: ", ETH.fullDuplex());
                     THINGER_DEBUG_VALUE("NETWORK", "ETH LinkSpeed: ", ETH.linkSpeed());
                     break;
-                case SYSTEM_EVENT_ETH_DISCONNECTED:
+                case ARDUINO_EVENT_ETH_DISCONNECTED:
                     THINGER_DEBUG("NETWORK", "ETH Disconnected");
                     break;
-                case SYSTEM_EVENT_ETH_STOP:
+                case ARDUINO_EVENT_ETH_STOP:
                     THINGER_DEBUG("NETWORK", "ETH Stopped");
                     break;
                 default:
@@ -71,10 +74,6 @@ public:
     
 protected:
 
-    virtual bool network_connected(){
-        return initialized_ ? ETH.linkUp() : false;
-    }
-
     bool init_address(){
         if(ip_==nullptr) return true;
         bool result = true;
@@ -85,9 +84,30 @@ protected:
         result &= dns1.fromString(dns1_);
         result &= dns2.fromString(dns2_);
         return result && ETH.config(ip, gateway, subnet, dns1, dns2);
-    } 
+    }
 
-    virtual bool connect_network(){
+    virtual bool network_connected() override{
+        return initialized_ ? ETH.linkUp() : false;
+    }
+
+#ifndef _DISABLE_TLS_
+    bool connect_socket() override{
+
+#ifdef THINGER_INSECURE_SSL
+        client_.setInsecure();
+        THINGER_DEBUG("SSL/TLS", "Warning: TLS/SSL certificate will not be checked!")
+#else
+        client_.setCACert(get_root_ca());
+#endif
+        return client_.connect(get_host(), THINGER_SSL_PORT);
+    }
+
+    bool secure_connection() override{
+        return true;
+    }
+#endif
+
+    bool connect_network() override{
         if(!initialized_){
             initialized_ = ETH.begin();
             if(initialized_){
@@ -100,7 +120,7 @@ protected:
         return network_connected();
     }
 
-    WiFiClient client_;
+    ESP32Client client_;
     bool initialized_       = false;
     const char* hostname_   = "esp32-thinger";
     const char* ip_         = nullptr;
@@ -108,7 +128,6 @@ protected:
     const char* subnet_     = nullptr;
     const char* dns1_       = nullptr;
     const char* dns2_       = nullptr;
-      
 };
 
 #endif
