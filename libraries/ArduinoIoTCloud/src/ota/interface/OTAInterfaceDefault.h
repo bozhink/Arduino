@@ -51,7 +51,7 @@ private:
 
   // The amount of time that each iteration of Fetch has to take at least
   // This mitigate the issues arising from tasks run in main loop that are using all the computing time
-  static constexpr uint32_t downloadTime = 100;
+  static constexpr uint32_t downloadTime = 2000;
 
   enum OTADownloadState: uint8_t {
     OtaDownloadHeader,
@@ -74,6 +74,7 @@ protected:
     uint32_t          headerCopiedBytes;
     uint32_t          downloadedSize;
     uint32_t          lastReportTime;
+    bool              writeError;
 
     // LZSS decoder
     LZSSDecoder       decoder;
