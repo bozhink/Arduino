@@ -4,6 +4,10 @@
 #include <Adafruit_ST7789.h>  // Hardware-specific library for ST7789
 #include <SPI.h>
 
+#ifndef constrain
+#define constrain(amt, low, high) ((amt) < (low) ? (low) : ((amt) > (high) ? (high) : (amt)))
+#endif
+
 // For the breakout board, you can use any 2 or 3 pins.
 // These pins will also work for the 1.8" TFT shield.
 #define TFT_CS 10
@@ -11,6 +15,7 @@
 #define TFT_DC 8
 #define TFT_MOSI 11  // Data out
 #define TFT_SCLK 13  // Clock out
+#define PIN SDA
 
 // OPTION 1 (recommended) is to use the HARDWARE SPI pins, which are unique
 // to each board and not reassignable. For Arduino Uno: MOSI = pin 11 and
@@ -317,6 +322,11 @@ const uint16_t camColors[] = {
   0xF800,
 };
 
+float min_f(float a, float b);
+float max_f(float a, float b);
+long map_l(long x, long in_min, long in_max, long out_min, long out_max);
+
+
 uint16_t displayPixelWidth, displayPixelHeight;
 
 void setup() {
@@ -414,10 +424,10 @@ void loop() {
     for (uint8_t w = MLX_READ_X_MIN; w < MLX_READ_X_MAX; w++) {
       float t = frame[h * MLX_W + w];
 
-      t = min(t, MAXTEMP);
-      t = max(t, MINTEMP);
+      t = min_f(t, MAXTEMP);
+      t = max_f(t, MINTEMP);
 
-      uint16_t colorIndex = map(t, MINTEMP, MAXTEMP, 0, 255);
+      uint16_t colorIndex = map_l(t, MINTEMP, MAXTEMP, 0, 255);
 
       colorIndex = constrain(colorIndex, 0, 255);
       //draw the pixels!
@@ -443,4 +453,16 @@ void testlines(uint16_t color) {
     tft.drawLine(0, tft.height() - 1, tft.width() - 1, y, color);
     delay(0);
   }
+}
+
+float min_f(float a, float b) {
+  return (b < a) ? b : a;
+}
+
+float max_f(float a, float b) {
+  return (a < b) ? b : a;
+}
+
+long map_l(long x, long in_min, long in_max, long out_min, long out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
