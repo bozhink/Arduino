@@ -2,13 +2,16 @@
 #include <Arduino_ConnectionHandler.h>
 #include "arduino_secrets.h"
 
-#if !(defined(BOARD_HAS_WIFI) || defined(BOARD_HAS_GSM) || defined(BOARD_HAS_LORA) || \
-      defined(BOARD_HAS_NB) || defined(BOARD_HAS_ETHERNET) || defined(BOARD_HAS_CATM1_NBIOT))
-  #error "Please check Arduino IoT Cloud supported boards list: https://github.com/arduino-libraries/ArduinoIoTCloud/#what"
+#if !(defined(HAS_TCP) || defined(HAS_LORA))
+  #error  "Please check Arduino IoT Cloud supported boards list: https://github.com/arduino-libraries/ArduinoIoTCloud/#what"
 #endif
 
 #if defined(BOARD_HAS_SECRET_KEY)
   #define BOARD_ID "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+#endif
+
+#if defined(HAS_LORA)
+  #define THING_ID "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 #endif
 
 void onLedChange();
@@ -22,14 +25,16 @@ void initProperties() {
   ArduinoCloud.setBoardId(BOARD_ID);
   ArduinoCloud.setSecretDeviceKey(SECRET_DEVICE_KEY);
 #endif
-#if defined(BOARD_HAS_WIFI) || defined(BOARD_HAS_GSM) || defined(BOARD_HAS_NB) || defined(BOARD_HAS_ETHERNET) || defined(BOARD_HAS_CATM1_NBIOT)
+#if defined(HAS_TCP)
   ArduinoCloud.addProperty(led, Permission::Write).onUpdate(onLedChange);
   ArduinoCloud.addProperty(potentiometer, Permission::Read).publishOnChange(10);
   ArduinoCloud.addProperty(seconds, Permission::Read).publishOnChange(1);
-#elif defined(BOARD_HAS_LORA)
+#elif defined(HAS_LORA)
   ArduinoCloud.addProperty(led, 1, Permission::ReadWrite).onUpdate(onLedChange);
   ArduinoCloud.addProperty(potentiometer, 2, Permission::Read).publishOnChange(10);
   ArduinoCloud.addProperty(seconds, 3, Permission::Read).publishEvery(5 * MINUTES);
+
+  ArduinoCloud.setThingId(THING_ID);
 #endif
 }
 
@@ -48,4 +53,6 @@ void initProperties() {
   NBConnectionHandler ArduinoIoTPreferredConnection(SECRET_PIN, SECRET_APN, SECRET_LOGIN, SECRET_PASS);
 #elif defined(BOARD_HAS_CATM1_NBIOT)
   CatM1ConnectionHandler ArduinoIoTPreferredConnection(SECRET_PIN, SECRET_APN, SECRET_LOGIN, SECRET_PASS);
+#elif defined(BOARD_HAS_CELLULAR)
+  CellularConnectionHandler ArduinoIoTPreferredConnection(SECRET_PIN, SECRET_APN, SECRET_LOGIN, SECRET_PASS);
 #endif
